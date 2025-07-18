@@ -1,110 +1,70 @@
-// 初始化所有模态框
+// 主应用初始化
 document.addEventListener('DOMContentLoaded', function() {
-    // 为所有模态框添加事件监听
-    var modals = document.querySelectorAll('.modal');
-    modals.forEach(function(modal) {
-        // 模态框显示时的事件
-        modal.addEventListener('show.bs.modal', function (event) {
-            // 可以在这里添加模态框显示时的逻辑
-        });
+    // 表单验证
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+            let isValid = true;
 
-        // 模态框隐藏时的事件
-        modal.addEventListener('hide.bs.modal', function (event) {
-            // 可以在这里添加模态框隐藏时的逻辑
-        });
-    });
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    isValid = false;
+                    input.classList.add('is-invalid');
 
-    // 为所有删除按钮添加确认对话框
-    var deleteButtons = document.querySelectorAll('button[type="submit"][onclick]');
-    deleteButtons.forEach(function(button) {
-        // 确保只处理包含确认对话框的按钮
-        if (button.getAttribute('onclick').includes('confirm')) {
-            button.addEventListener('click', function(e) {
-                // 这里可以添加额外的确认逻辑
-            });
-        }
-    });
-
-    // 为搜索框添加实时搜索功能
-    var searchInputs = document.querySelectorAll('input[type="search"]');
-    searchInputs.forEach(function(input) {
-        input.addEventListener('input', function() {
-            var searchTerm = this.value.toLowerCase();
-            var table = this.closest('div').nextElementSibling;
-            if (table && table.tagName === 'TABLE') {
-                var rows = table.querySelectorAll('tbody tr');
-                rows.forEach(function(row) {
-                    var rowText = row.textContent.toLowerCase();
-                    if (rowText.includes(searchTerm)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
+                    if (!input.nextElementSibling || !input.nextElementSibling.classList.contains('invalid-feedback')) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback';
+                        errorDiv.textContent = '此字段不能为空';
+                        input.parentNode.insertBefore(errorDiv, input.nextSibling);
                     }
-                });
+                } else {
+                    input.classList.remove('is-invalid');
+                    const errorDiv = input.nextElementSibling;
+                    if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
+                        errorDiv.remove();
+                    }
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
             }
         });
     });
+
+    // 自动关闭警告消息
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        }, 5000);
+    });
+
+    // 初始化工具提示
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // 实时更新系统时间
+    if (document.getElementById('current-time')) {
+        updateSystemTime();
+        setInterval(updateSystemTime, 1000);
+    }
 });
 
-// 表单验证
-function validateForm(formId) {
-    var form = document.getElementById(formId);
-    if (!form) return false;
-
-    var inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-    var isValid = true;
-
-    inputs.forEach(function(input) {
-        if (!input.value.trim()) {
-            isValid = false;
-            // 添加错误样式
-            input.classList.add('is-invalid');
-
-            // 添加错误提示
-            var errorDiv = input.nextElementSibling;
-            if (!errorDiv || !errorDiv.classList.contains('invalid-feedback')) {
-                errorDiv = document.createElement('div');
-                errorDiv.className = 'invalid-feedback';
-                errorDiv.textContent = '此字段不能为空';
-                input.parentNode.insertBefore(errorDiv, input.nextSibling);
-            }
-        } else {
-            // 移除错误样式
-            input.classList.remove('is-invalid');
-
-            // 移除错误提示
-            var errorDiv = input.nextElementSibling;
-            if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
-                input.parentNode.removeChild(errorDiv);
-            }
-        }
-    });
-
-    return isValid;
+// 更新系统时间
+function updateSystemTime() {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const timeStr = now.toTimeString().slice(0, 8);
+    document.getElementById('current-time').textContent = `${dateStr} ${timeStr}`;
 }
 
-// 平滑滚动
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-
-        document.querySelector(this.getAttribute('href')).scrollIntoView({
-            behavior: 'smooth'
-        });
-    });
-});
-
-// 自动关闭提示消息
-window.setTimeout(function() {
-    var alerts = document.querySelectorAll('.alert');
-    alerts.forEach(function(alert) {
-        // 淡出效果
-        alert.style.transition = 'opacity 1s';
-        alert.style.opacity = '0';
-
-        // 完全透明后隐藏元素
-        setTimeout(function() {
-            alert.style.display = 'none';
-        }, 1000);
-    });
-}, 5000); // 5秒后自动关闭
+// 确认对话框
+function confirmAction(message) {
+    return confirm(message || '确定要执行此操作吗？');
+}

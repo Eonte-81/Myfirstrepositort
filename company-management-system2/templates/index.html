@@ -1,43 +1,135 @@
 {% extends "base.html" %}
 
+{% block title %}系统总览 - 公司部门管理系统{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-3 mb-4">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <h5 class="card-title">部门总数</h5>
-                <p class="card-text display-4">{{ department_count }}</p>
-            </div>
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3><i class="bi bi-speedometer2 me-2"></i>系统总览</h3>
+    <div class="d-flex">
+        <button class="btn btn-outline-primary me-2">
+            <i class="bi bi-arrow-repeat"></i> 刷新
+        </button>
+        <a href="{{ url_for('operation.list_announcements') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> 添加公告
+        </a>
     </div>
-    <div class="col-md-3 mb-4">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <h5 class="card-title">成员总数</h5>
-                <p class="card-text display-4">{{ member_count }}</p>
-            </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card stat-card bg-light">
+        <div class="stat-icon text-primary">
+            <i class="bi bi-diagram-3"></i>
         </div>
+        <div class="stat-value">{{ department_count }}</div>
+        <div class="stat-label">部门数量</div>
     </div>
-    <!-- 其他统计卡片 -->
+
+    <div class="card stat-card bg-light">
+        <div class="stat-icon text-success">
+            <i class="bi bi-people"></i>
+        </div>
+        <div class="stat-value">{{ member_count }}</div>
+        <div class="stat-label">成员数量</div>
+    </div>
+
+    <div class="card stat-card bg-light">
+        <div class="stat-icon text-info">
+            <i class="bi bi-person-badge"></i>
+        </div>
+        <div class="stat-value">{{ user_count }}</div>
+        <div class="stat-label">用户数量</div>
+    </div>
+
+    <div class="card stat-card bg-light">
+        <div class="stat-icon text-warning">
+            <i class="bi bi-megaphone"></i>
+        </div>
+        <div class="stat-value">{{ announcement_count }}</div>
+        <div class="stat-label">公告数量</div>
+    </div>
 </div>
 
 <div class="row mt-4">
-    <div class="col-md-6">
+    <div class="col-lg-8">
         <div class="card">
-            <div class="card-header">系统信息</div>
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">最新公告</h5>
+                <a href="{{ url_for('operation.list_announcements') }}" class="btn btn-sm btn-outline-primary">查看全部</a>
+            </div>
             <div class="card-body">
-                <table class="table">
-                    <tbody>
-                        <tr><th>系统名称</th><td>{{ system_info.system.system_name }}</td></tr>
-                        <tr><th>版本</th><td>{{ system_info.system.version }}</td></tr>
-                        <tr><th>操作系统</th><td>{{ system_info.system.os }}</td></tr>
-                        <tr><th>CPU核数</th><td>{{ system_info.cpu.cpu_count }}</td></tr>
-                        <tr><th>总内存</th><td>{{ system_info.memory.total_memory }} GB</td></tr>
-                        <!-- 其他系统信息 -->
-                    </tbody>
-                </table>
+                {% for announcement in latest_announcements %}
+                <div class="announcement-item">
+                    <h6>{{ announcement.title }}</h6>
+                    <p class="text-muted small mb-1">
+                        发布时间: {{ announcement.create_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                        | 发布者: {{ announcement.creator.username if announcement.creator else '未知用户' }}
+                    </p>
+                    <p class="mb-0">{{ announcement.content|truncate(100) }}</p>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-info-circle fs-1 text-muted"></i>
+                    <p class="mt-3">暂无公告</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card system-info-card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">系统信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="system-info-item">
+                    <span>系统名称</span>
+                    <span>{{ system_info.system.system_name }}</span>
+                </div>
+                <div class="system-info-item">
+                    <span>版本</span>
+                    <span>{{ system_info.system.version }}</span>
+                </div>
+                <div class="system-info-item">
+                    <span>操作系统</span>
+                    <span>{{ system_info.system.os }}</span>
+                </div>
+                <div class="system-info-item">
+                    <span>主机名</span>
+                    <span>{{ system_info.system.hostname }}</span>
+                </div>
+                <div class="system-info-item">
+                    <span>IP地址</span>
+                    <span>{{ system_info.system.ip_address }}</span>
+                </div>
+                <div class="system-info-item">
+                    <span>当前时间</span>
+                    <span id="current-time">{{ system_info.system.current_time }}</span>
+                </div>
+                <div class="system-info-item">
+                    <span>内存使用</span>
+                    <span>{{ system_info.memory.memory_percent }}%</span>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 实时更新时间
+    function updateClock() {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const timeStr = now.toTimeString().slice(0, 8);
+        document.getElementById('current-time').textContent = `${dateStr} ${timeStr}`;
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        updateClock();
+        setInterval(updateClock, 1000);
+    });
+</script>
 {% endblock %}

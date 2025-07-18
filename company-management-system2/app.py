@@ -31,6 +31,11 @@ app = Flask(__name__)
 env = os.getenv('FLASK_ENV', 'development')
 app.config.from_object(config[env])
 
+# 添加上下文处理器
+@app.context_processor
+def inject_now():
+    return {'now': datetime.utcnow()}
+
 # 尝试从 config.py 加载配置，如果文件存在
 config_path = 'config.py'
 if os.path.exists(config_path):
