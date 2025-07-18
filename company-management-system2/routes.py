@@ -49,12 +49,29 @@ def get_system_info():
         'available_memory': round(psutil.virtual_memory().available / (1024 ** 3), 2),
         'memory_percent': psutil.virtual_memory().percent
     }
-    disk = {
-        'total_disk': round(psutil.disk_usage('/').total / (1024 ** 3), 2),
-        'used_disk': round(psutil.disk_usage('/').used / (1024 ** 3), 2),
-        'free_disk': round(psutil.disk_usage('/').free / (1024 ** 3), 2),
-        'disk_percent': psutil.disk_usage('/').percent
-    }
+    try:
+        # 获取系统盘符
+        system_drive = os.environ.get('SystemDrive', 'C:') + '\\'
+        disk_usage = psutil.disk_usage(system_drive)
+        disk = {
+            'total_disk': round(disk_usage.total / (1024 ** 3), 2),
+            'used_disk': round(disk_usage.used / (1024 ** 3), 2),
+            'free_disk': round(disk_usage.free / (1024 ** 3), 2),
+            'disk_percent': disk_usage.percent
+        }
+    except Exception as e:
+        print(f"获取磁盘信息失败: {e}")
+        disk = {
+            'total_disk': 0,
+            'used_disk': 0,
+            'free_disk': 0,
+            'disk_percent': 0
+        }
+    try:
+        cpu_freq = psutil.cpu_freq()
+        current_freq = cpu_freq.current if cpu_freq else 'N/A'
+    except Exception:
+        current_freq = 'N/A'
     try:
         mysql_version = subprocess.check_output(['mysql', '--version']).decode('utf-8').strip()
     except Exception:
@@ -63,9 +80,16 @@ def get_system_info():
         nginx_version = subprocess.check_output(['nginx', '-v'], stderr=subprocess.STDOUT).decode('utf-8').strip()
     except Exception:
         nginx_version = '未安装'
-    flask_version = importlib.util.find_spec('flask').loader.load_module().__version__
-    sqlalchemy_version = importlib.util.find_spec('sqlalchemy').loader.load_module().__version__
-
+    try:
+        import flask
+        flask_version = flask.__version__
+    except ImportError:
+        flask_version = '未安装'
+    try:
+        import sqlalchemy
+        sqlalchemy_version = sqlalchemy.__version__
+    except ImportError:
+        sqlalchemy_version = '未安装'
     return {
         'system': system,
         'cpu': cpu,
